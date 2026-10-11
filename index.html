@@ -45,14 +45,16 @@ h1{font-family:var(--display);font-weight:480;font-size:clamp(30px,3.5vw,50px);l
 .orbit{margin:-12px 0 0;font-size:13px;color:var(--faint)}
 .places{min-height:0;display:flex;flex-direction:column;gap:10px;flex:1}
 .places h2{margin:0;font-size:11.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
-.stamps{display:flex;flex-wrap:wrap;gap:8px;overflow:auto;align-content:flex-start;padding:2px 6px 2px 2px;scrollbar-width:thin}
-.stamp{display:inline-flex;align-items:center;gap:8px;padding:7px 13px 7px 10px;border-radius:999px;border:1px solid var(--line);
+.stamps{display:flex;flex-direction:column;gap:6px;overflow-y:auto;min-height:0;padding:2px 6px 2px 2px;scrollbar-width:thin}
+.stamp{display:flex;flex:none;align-items:center;gap:10px;width:100%;min-height:42px;text-align:left;padding:8px 14px 8px 12px;border-radius:12px;border:1px solid var(--line);
   background:rgba(14,22,60,.62);backdrop-filter:blur(8px);white-space:nowrap;transition:border-color .2s,background .2s,transform .2s}
-.stamp i{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold)}
-.stamp small{color:var(--faint);font-size:12px;font-variant-numeric:tabular-nums}
-.stamp:hover{border-color:var(--gold);transform:translateY(-1px)}
+.stamp .nm{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.stamp i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.stamp small{margin-left:auto;padding-left:8px;color:var(--faint);font-size:12px;font-variant-numeric:tabular-nums}
+.stamp:hover{border-color:var(--gold)}
 .stamp[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#2a1a02;font-weight:700}
 .stamp[aria-pressed="true"] i{background:#2a1a02;box-shadow:none}.stamp[aria-pressed="true"] small{color:#5a3c08}
+.filter{flex:none}
 .filter .inp{border-radius:999px;padding:8px 16px}
 .empty{color:var(--mist);font-size:14px;max-width:32ch;margin:0}
 
@@ -149,10 +151,10 @@ body.open .demo{display:none}
   .sub{font-size:13.5px;max-width:none}
   .mast .sub.view-only{display:none}
   .stats{gap:18px}.stat b{font-size:22px}.stat span{font-size:10px}.orbit{display:none}
-  .places{position:fixed;left:0;right:0;bottom:0;flex:none;padding:10px 0 calc(14px + env(safe-area-inset-bottom,0px));gap:8px;
-    background:linear-gradient(180deg,transparent,rgba(6,10,30,.9) 45%)}
-  .places h2,.places .empty,.places .search,.places .filter{margin-inline:16px}
-  .stamps{flex-wrap:nowrap;overflow-x:auto;padding:2px 16px 4px;scrollbar-width:none}
+  .places{position:fixed;left:0;right:0;bottom:0;flex:none;max-height:38%;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));gap:8px;
+    background:rgba(8,13,38,.88);backdrop-filter:blur(14px);border-top:1px solid var(--line);border-radius:20px 20px 0 0}
+  .places h2,.places .empty,.places .search,.places .filter{margin-inline:16px;flex:none}
+  .stamps{padding:2px 16px 4px}
   .results{top:auto;bottom:calc(100% + 6px)}
   .bar{top:14px;right:16px}
   .panel{top:auto;left:0;right:0;bottom:0;width:auto;height:62%;border-radius:22px 22px 0 0;border-bottom:0;transform:translateY(105%)}
@@ -163,6 +165,7 @@ body.open .demo{display:none}
   .wall{gap:20px 14px}
   .light .nav{top:auto;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:none}
 }
+@media (min-width:761px) and (max-height:560px){.sub.view-only,.orbit{display:none}h1{font-size:28px}.side{gap:14px;padding-block:18px}}
 @media (prefers-reduced-motion:reduce){.pola{animation:none}.panel,.pola{transition:none}}
 </style>
 </head>
@@ -194,11 +197,11 @@ body.open .demo{display:none}
       <input class="inp" id="f-search" placeholder="Davlat nomini yozing" autocomplete="off">
       <div class="results" id="results" hidden></div>
     </div>
+    <div class="stamps" id="stamps"></div>
+    <p class="empty" id="empty" hidden></p>
     <div class="filter view-only" id="filterbox">
       <input class="inp" id="f-filter" type="search" placeholder="Davlat yoki joyni qidiring" aria-label="Borgan joylari ichidan qidirish" autocomplete="off">
     </div>
-    <p class="empty" id="empty" hidden></p>
-    <div class="stamps" id="stamps"></div>
   </section>
 </div>
 
@@ -269,7 +272,7 @@ function h(tag,props){
 }
 function list(){return showDemo?demoPlaces:data.places}
 function info(id){return INDEX[id]||null}
-function nameOf(id){var i=info(id);return i?i.name:id}
+function nameOf(id){var i=info(id);return i?i.name:(UZ[id]||id)}
 function srcFor(ph){return ph.u||urls.get(ph.f)||ph.f}
 function homeLL(){return [data.home.lon,data.home.lat]}
 function kmTo(i){return d3.geoDistance(homeLL(),i.c)*6371}
@@ -342,10 +345,13 @@ var view={lon:60,lat:24,zoom:1,zoomT:1,cx:0,cy:0,R:0,vx:0,vy:0,sLon:0,sLat:0,spi
 var proj=null,path=null,fly=null,flight=null,lastTouch=-1e9,last=0,pinsHit=[],mouse=null;
 var stars=[];(function(){var s=7;function r(){s=(s*16807)%2147483647;return s/2147483647}
   for(var i=0;i<620;i++){var u=r()*2-1,t=r()*TAU,q=Math.sqrt(1-u*u);stars.push({x:q*Math.cos(t),y:u,z:q*Math.sin(t),a:.25+r()*.75,s:r()<.08?1.8:r()<.3?1.2:.8,f:.6+r()*1.8,p:r()*TAU});}})();
-function resize(){DPR=Math.min(window.devicePixelRatio||1,2);W=window.innerWidth;H=window.innerHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);}
+function resize(){DPR=Math.min(window.devicePixelRatio||1,2);W=window.innerWidth;H=window.innerHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);measure();}
+var mob={top:150,bot:500};
+function measure(){if(W>=760||document.body.classList.contains('open'))return;var a=$('#stats').getBoundingClientRect(),b=$('.places').getBoundingClientRect();
+  if(a.width&&b.width){mob.top=a.bottom+6;mob.bot=b.top-6;}}
 function targets(){
   var mobile=W<760,open=!!sel,cx,cy,base;
-  if(mobile){cx=W/2; if(open){cy=H*.2;base=Math.min(W*.4,H*.155);}else{cy=H*.5;base=Math.min(W*.45,H*.27);}}
+  if(mobile){cx=W/2; if(open){cy=H*.2;base=Math.min(W*.4,H*.155);}else{var gap=Math.max(120,mob.bot-mob.top);cy=mob.top+gap/2;base=Math.min(W*.45,gap*.43);}}
   else{var lw=(open&&W<1200)?0:Math.min(400,W*.38),pw=open?Math.min(480,W*.42)+30:0,free=W-lw-pw;
     cx=lw+free/2;cy=H/2+(open?20:0);base=Math.min(free*.47,H*(open?.36:.4));}
   return {cx:cx,cy:cy,R:base*view.zoom};
@@ -552,9 +558,10 @@ function renderStamps(){
   var L=list(),q=editing?'':norm($('#f-filter').value),box=$('#stamps');box.textContent='';
   var M=!q?L:L.filter(function(p){var i=info(p.id);
     return norm(nameOf(p.id)).indexOf(q)>=0||(i&&norm(i.en).indexOf(q)>=0)||norm(p.year||'').indexOf(q)>=0||p.photos.some(function(x){return norm(x.c||'').indexOf(q)>=0});});
-  M.forEach(function(p){box.append(h('button',{class:'stamp','aria-pressed':String(p.id===sel),onclick:function(){select(p.id)}},h('i'),nameOf(p.id),h('small',{text:String(p.photos.length)})))});
+  M.forEach(function(p){box.append(h('button',{class:'stamp','aria-pressed':String(p.id===sel),onclick:function(){select(p.id)}},h('i'),h('span',{class:'nm',text:nameOf(p.id)}),h('small',{text:p.photos.length+' ta rasm'})))});
   $('#filterbox').hidden=L.length===0;
   var em=$('#empty');em.hidden=M.length>0;
+  measure();
   em.textContent=L.length?'Bunday joy topilmadi.':editing?'Ro‘yxat bo‘sh. Davlat qo‘shish uchun globusda ustiga bosing yoki nomini yozing.':'Hali davlat qo‘shilmagan.';
 }
 $('#f-filter').addEventListener('input',renderStamps);
@@ -566,7 +573,7 @@ function select(id){
   var i=info(id);if(i){flyTo(i.c,W<760?Math.max(view.zoomT,1.2):0);if(isVisited(id))flight={id:id,t0:performance.now()+(reduce?0:350)};}
   renderPanel();renderSide();$('#pbody').scrollTop=0;
 }
-function closePanel(){sel=null;document.body.classList.remove('open');if(W<760)view.zoomT=1;renderSide();}
+function closePanel(){sel=null;document.body.classList.remove('open');if(W<760)view.zoomT=1;renderSide();measure();}
 function coordText(c){return Math.abs(c[1]).toFixed(1)+'° '+(c[1]>=0?'sh.k.':'j.k.')+' · '+Math.abs(c[0]).toFixed(1)+'° '+(c[0]>=0?'shq.u.':'g‘.u.')}
 function tilt(e){var el=e.currentTarget,b=el.getBoundingClientRect();el.style.setProperty('--ry',((e.clientX-b.left)/b.width-.5)*16+'deg');el.style.setProperty('--rx',(.5-(e.clientY-b.top)/b.height)*14+'deg');}
 function untilt(e){e.currentTarget.style.setProperty('--ry','0deg');e.currentTarget.style.setProperty('--rx','0deg');}
@@ -696,7 +703,7 @@ function setEditing(on){
   editing=on;document.body.classList.toggle('editing',on);$('#edit').textContent=on?'Tayyor':'Tahrirlash';$('#edit').classList.toggle('gold',on);
   if(on){showDemo=false;if(sel&&!isVisited(sel)){closePanel();}$('#f-title').value=data.title||DEF_TITLE;$('#f-sub').value=data.subtitle||DEF_SUB;}
   else{showDemo=data.places.length===0&&!!demoPlaces;if(sel&&!isVisited(sel))closePanel();if(pending.size||removed.size)save();}
-  renderSide();renderPanel();
+  renderSide();renderPanel();measure();
 }
 $('#edit').onclick=function(){setEditing(!editing)};
 $('#f-title').addEventListener('input',function(e){data.title=e.target.value.trim()===DEF_TITLE?'':e.target.value;$('#title').textContent=data.title||DEF_TITLE;dirty()});
