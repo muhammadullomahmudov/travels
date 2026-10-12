@@ -236,7 +236,7 @@ body.open .leaflet-right{right:min(500px,calc(42vw + 20px))}
 .addbox{display:block}
 .addbox .inp,.filter .inp{padding:6px 13px;font-size:13px;border-radius:999px}
 .filter{max-width:280px}
-.stamps{gap:6px;max-height:min(176px,28vh);overflow-y:auto;scrollbar-width:thin}
+.stamps{gap:6px;max-height:min(140px,24vh);overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain}
 .stamp{min-height:30px;padding:4px 10px 4px 9px;gap:6px;font-size:13px}
 .stamp i{width:6px;height:6px}.stamp small{font-size:11px}
 .panel-body>.dropzone{flex:none;padding:13px;font-weight:700;font-size:15px}
@@ -245,8 +245,7 @@ body.open .leaflet-right{right:min(500px,calc(42vw + 20px))}
   .places-head,.places .filter,.places .addbox{margin-inline:12px}
   .places h2{font-size:10.5px}
   .filter{max-width:none}
-  .stamps{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;max-height:none;padding:1px 12px 3px;gap:6px;scrollbar-width:none}
-  .stamps::-webkit-scrollbar{display:none}
+  .stamps{flex-wrap:wrap;overflow-x:hidden;overflow-y:auto;max-height:104px;padding:1px 12px 3px;gap:6px;scrollbar-width:thin;overscroll-behavior:contain}
   .stamp{min-height:30px;padding:4px 10px 4px 9px;font-size:13px}
 }
 </style>
