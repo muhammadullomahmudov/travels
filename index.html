@@ -226,6 +226,29 @@ body.open .leaflet-right{right:min(500px,calc(42vw + 20px))}
   .leaflet-control-attribution{display:none}
   body.open .leaflet-right{right:0}body.open .leaflet-bottom.leaflet-right{display:none}
 }
+
+/* ---------- compact place list + quick add ---------- */
+.places{flex:none;gap:8px;min-height:0}
+.places-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.add-c{flex:none;border:1px solid rgba(243,185,77,.55);background:rgba(243,185,77,.12);color:var(--cream);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:600;white-space:nowrap;transition:background .2s}
+.add-c:hover{background:rgba(243,185,77,.24)}
+.add-c[aria-expanded="true"]{border-color:var(--line);background:rgba(14,22,60,.7);color:var(--mist)}
+.addbox{display:block}
+.addbox .inp,.filter .inp{padding:6px 13px;font-size:13px;border-radius:999px}
+.filter{max-width:280px}
+.stamps{gap:6px;max-height:min(176px,28vh);overflow-y:auto;scrollbar-width:thin}
+.stamp{min-height:30px;padding:4px 10px 4px 9px;gap:6px;font-size:13px}
+.stamp i{width:6px;height:6px}.stamp small{font-size:11px}
+.panel-body>.dropzone{flex:none;padding:13px;font-weight:700;font-size:15px}
+@media (max-width:760px){
+  .places{padding:9px 0 calc(9px + env(safe-area-inset-bottom,0px));gap:7px;border-radius:16px 16px 0 0}
+  .places-head,.places .filter,.places .addbox{margin-inline:12px}
+  .places h2{font-size:10.5px}
+  .filter{max-width:none}
+  .stamps{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;max-height:none;padding:1px 12px 3px;gap:6px;scrollbar-width:none}
+  .stamps::-webkit-scrollbar{display:none}
+  .stamp{min-height:30px;padding:4px 10px 4px 9px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -250,10 +273,9 @@ body.open .leaflet-right{right:min(500px,calc(42vw + 20px))}
   </div>
   <p class="orbit" id="orbit"></p>
   <section class="places" aria-label="Borgan joylari">
-    <h2>Borgan joylari</h2>
-    <div class="search edit-only" style="flex-direction:column;gap:5px">
-      <label class="lbl" for="f-search">Davlat qo‘shish</label>
-      <input class="inp" id="f-search" placeholder="Davlat nomini yozing" autocomplete="off">
+    <div class="places-head"><h2>Borgan joylari</h2><button class="add-c" id="addc" type="button" aria-expanded="false">+ Davlat qo‘shish</button></div>
+    <div class="search addbox" id="addbox" hidden>
+      <input class="inp" id="f-search" placeholder="Yangi davlat nomini yozing" aria-label="Yangi davlat nomi" autocomplete="off">
       <div class="results" id="results" hidden></div>
     </div>
     <div class="filter view-only" id="filterbox">
@@ -267,8 +289,6 @@ body.open .leaflet-right{right:min(500px,calc(42vw + 20px))}
 <div class="bar">
   <span class="chip" id="status" hidden></span>
   <button class="btn small" id="retry" hidden>Qayta urinish</button>
-  <button class="btn small edit-only" id="logout" title="Bu brauzerdagi GitHub tokenni o‘chirish">Chiqish</button>
-  <button class="btn" id="edit" hidden>Tahrirlash</button>
 </div>
 
 <aside class="panel" id="panel" aria-label="Davlat rasmlari">
@@ -593,17 +613,14 @@ function renderPanel(){
         data.places.push({id:sel,year:'',note:'',photos:[]});dirty();renderSide();select(sel);}})));
     return;
   }
-  if(canEdit){
-    var yr=h('input',{class:'inp',id:'f-year',value:p.year||'',placeholder:'masalan: 2014, 2019',maxLength:40,oninput:function(){p.year=yr.value;dirty()}});
-    var nt=h('textarea',{class:'inp',id:'f-note',value:p.note||'',placeholder:'Bu safar haqida bir-ikki og‘iz so‘z',maxLength:600,oninput:function(){p.note=nt.value;dirty()}});
-    var fi=h('input',{type:'file',id:'f-photos',accept:'image/*',multiple:true,hidden:true,onchange:function(){addFiles(p,fi.files);fi.value=''}});
-    var dz=h('label',{class:'dropzone',for:'f-photos'},'Rasm qo‘shish',h('small',{text:'Rasmlarni shu yerga tashlang yoki bosib tanlang'}));
+  if(!p.demo){
+    var fi=h('input',{type:'file',id:'f-photos',accept:'image/*',multiple:true,hidden:true,onchange:function(){var fl=Array.from(fi.files||[]);fi.value='';ensureApi(function(){addFiles(p,fl)})}});
+    var dz=h('label',{class:'dropzone',for:'f-photos'},'+ Rasm qo‘shish',h('small',{text:'Rasmlarni tanlang yoki shu yerga tashlang'}));
     dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over')});
     dz.addEventListener('dragleave',function(){dz.classList.remove('over')});
-    dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');addFiles(p,e.dataTransfer.files)});
-    body.append(h('div',{class:'field'},h('label',{for:'f-year',text:'Yil'}),yr),h('div',{class:'field'},h('label',{for:'f-note',text:'Xotira'}),nt),fi,dz);
+    dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');var fl=Array.from(e.dataTransfer.files||[]);ensureApi(function(){addFiles(p,fl)})});
+    body.append(fi,dz);
   }
-  if(!p.photos.length&&!canEdit)body.append(h('p',{class:'empty',text:'Bu davlat uchun hali rasm qo‘shilmagan.'}));
   var wall=h('div',{class:'wall'});
   p.photos.forEach(function(ph,ix){
     var fig=h('figure',{class:'pola',style:'--r:'+((hash(ph.f)%9)*.6).toFixed(1)+'deg;--i:'+Math.min(ix,10),onpointermove:tilt,onpointerleave:untilt},
@@ -696,12 +713,25 @@ function addFiles(p,fl){
   })();
 }
 function setEditing(on){
-  editing=on;document.body.classList.toggle('editing',on);$('#edit').textContent=on?'Tayyor':'Tahrirlash';$('#edit').classList.toggle('gold',on);
+  editing=on;document.body.classList.toggle('editing',on);
   if(on){showDemo=false;if(sel&&!isVisited(sel)){closePanel();}$('#f-title').value=data.title||DEF_TITLE;$('#f-sub').value=data.subtitle||DEF_SUB;}
   else{showDemo=data.places.length===0&&!!demoPlaces;if(sel&&!isVisited(sel))closePanel();if(pending.size||removed.size)save();}
   renderSide();renderPanel();measure();
 }
-$('#edit').onclick=function(){if(!editing&&!api){askToken();return;}setEditing(!editing)};
+function ensureApi(cb){if(api&&!readOnly)cb();else askToken(cb);}
+function toggleAdd(on){var b=$('#addbox');b.hidden=!on;$('#addc').setAttribute('aria-expanded',String(on));$('#addc').textContent=on?'Bekor qilish':'+ Davlat qo‘shish';
+  if(on)$('#f-search').focus();else{$('#f-search').value='';$('#results').hidden=true;}measure();}
+$('#addc').onclick=function(){toggleAdd($('#addbox').hidden)};
+$('#f-search').addEventListener('keydown',function(e){if(e.key==='Escape')toggleAdd(false);else if(e.key==='Enter'){var b=$('#results button:not([disabled])');if(b)b.click();}});
+function addCountry(id){
+  toggleAdd(false);
+  if(isVisited(id)&&!showDemo){select(id);return;}
+  ensureApi(function(){
+    if(showDemo)showDemo=false;
+    if(!data.places.some(function(q){return q.id===id}))data.places.push({id:id,year:'',note:'',photos:[]});
+    dirty();renderSide();select(id);toast(nameOf(id)+' qo‘shildi. Endi rasmlarini qo‘shing.');
+  });
+}
 $('#f-title').addEventListener('input',function(e){data.title=e.target.value.trim()===DEF_TITLE?'':e.target.value;$('#title').textContent=data.title||DEF_TITLE;dirty()});
 $('#f-sub').addEventListener('input',function(e){data.subtitle=e.target.value.trim()===DEF_SUB?'':e.target.value;$('#sub').textContent=data.subtitle||DEF_SUB;dirty()});
 var allPlaces=null;
@@ -710,11 +740,11 @@ $('#f-search').addEventListener('input',function(e){
   if(!q){box.hidden=true;return;}
   if(!allPlaces)allPlaces=Object.keys(INDEX).map(function(k){return INDEX[k]}).sort(function(a,b){return a.name.localeCompare(b.name)});
   var m=allPlaces.filter(function(i){return norm(i.name).indexOf(q)>=0||norm(i.en).indexOf(q)>=0||i.id.toLowerCase()===q}).slice(0,8);
-  m.forEach(function(i){box.append(h('button',{type:'button',onclick:function(){box.hidden=true;e.target.value='';select(i.id)}},i.name,h('small',{text:isVisited(i.id)?'ro‘yxatda':''})))});
+  m.forEach(function(i){box.append(h('button',{type:'button',onclick:function(){box.hidden=true;e.target.value='';addCountry(i.id)}},i.name,h('small',{text:isVisited(i.id)?'ro‘yxatda':''})))});
   if(!m.length)box.append(h('button',{type:'button',disabled:true,text:'Topilmadi'}));
   box.hidden=false;
 });
-document.addEventListener('click',function(e){if(!e.target.closest('.search'))$('#results').hidden=true});
+document.addEventListener('click',function(e){if(!e.target.closest('.search')&&!e.target.closest('#addc'))$('#results').hidden=true});
 
 /* ---------- saving straight to the GitHub repository (owner only, with a personal token) ---------- */
 var GH={owner:'muhammadullomahmudov',repo:'travels',branch:'main'},TOKEN_KEY='travels_gh_token';
@@ -739,25 +769,24 @@ function ghApi(tok){return {publish:function(files){
     .then(function(c){return ghReq('PATCH','/git/refs/heads/'+GH.branch,{sha:c.sha},tok);})
     .catch(function(e){var x=new Error('save'),s=e&&e.status;x.code=s===401||s===403||s===404?'not_writer':s===409||s===422||s===429?'rate_limited':s===413?'too_large':'other';throw x;});
 }};}
-function askToken(){
-  var box=h('div',{class:'gh-modal',role:'dialog','aria-modal':'true','aria-label':'Tahrirlashga kirish'});
+function askToken(onDone){
+  var box=h('div',{class:'gh-modal',role:'dialog','aria-modal':'true','aria-label':'Saqlash uchun kirish'});
   var inp=h('input',{class:'inp',type:'password',id:'f-token',placeholder:'github_pat_…',autocomplete:'off'}),msg=h('p',{class:'gh-msg'});
   function close(){box.remove();document.removeEventListener('keydown',esc);}
   function esc(e){if(e.key==='Escape')close();}
   function go(){var t=inp.value.trim();if(!t)return;msg.textContent='Tekshirilmoqda…';
     ghReq('GET','',null,t).then(function(r){if(!r||!r.permissions||!r.permissions.push){var e=new Error('ro');e.status=403;throw e;}
-      try{localStorage.setItem(TOKEN_KEY,t)}catch(_){}api=ghApi(t);readOnly=false;close();setEditing(true);
-      toast('Tahrirlash yoqildi. Qo‘shganlaringiz GitHub’ga saqlanadi.');})
+      try{localStorage.setItem(TOKEN_KEY,t)}catch(_){}api=ghApi(t);readOnly=false;close();if(onDone)onDone();})
     .catch(function(e){msg.textContent=e&&e.status===401?'Token noto‘g‘ri yoki muddati o‘tgan.':'Bu token bilan '+GH.owner+'/'+GH.repo+' ga yozib bo‘lmaydi.';});}
   inp.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
   box.addEventListener('click',function(e){if(e.target===box)close();});
   box.append(h('div',{class:'gh-card'},
-    h('h3',{text:'Tahrirlash'}),
-    h('p',{text:'Davlat va rasm qo‘shish faqat sayt egasiga ochiq. Buning uchun GitHub tokeningizni bir marta kiriting, u faqat shu brauzerda saqlanadi.'}),
+    h('h3',{text:'Saqlash uchun kirish'}),
+    h('p',{text:'Qo‘shilganlar saytga saqlanishi uchun GitHub tokeningizni bir marta kiriting. U faqat shu brauzerda saqlanadi, shuning uchun boshqalar hech narsa qo‘sha olmaydi.'}),
     h('ol',null,h('li',{text:'github.com → Settings → Developer settings → Fine-grained tokens → Generate new token'}),
       h('li',{text:'Repository access: faqat “'+GH.repo+'”. Permissions → Contents: Read and write'}),h('li',{text:'Hosil bo‘lgan tokenni shu yerga qo‘ying'})),
     h('div',{class:'field'},h('label',{for:'f-token',text:'GitHub token'}),inp),msg,
-    h('div',{class:'row'},h('button',{class:'btn gold',text:'Kirish',onclick:go}),h('button',{class:'btn',text:'Bekor qilish',onclick:close}))));
+    h('div',{class:'row'},h('button',{class:'btn gold',text:'Davom etish',onclick:go}),h('button',{class:'btn',text:'Bekor qilish',onclick:close}))));
   document.body.append(box);document.addEventListener('keydown',esc);inp.focus();
 }
 
@@ -790,11 +819,10 @@ $('#sub').textContent=DEF_SUB;
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){});
 var use=window.claude&&window.claude.use;
 if(use)Promise.resolve(window.claude.use('artifact')).then(function(a){
-  if(!a||typeof a.publish!=='function')return;api=a;$('#edit').hidden=false;if(showDemo)renderSide();
+  if(!a||typeof a.publish!=='function')return;api=a;if(showDemo)renderSide();
 }).catch(function(){});
 if(!api&&ghToken())api=ghApi(ghToken());
-$('#edit').hidden=false;
-$('#logout').onclick=function(){try{localStorage.removeItem(TOKEN_KEY)}catch(_){}if(pending.size||removed.size)save();api=null;setEditing(false);toast('Tahrirlashdan chiqildi.');};
+
 })();
 </script>
 </body>
