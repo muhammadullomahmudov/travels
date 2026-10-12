@@ -394,7 +394,7 @@ var paper=null,overlay=null,mapLayer=document.createElement('canvas'),mctx=mapLa
 var pos={};
 var INK='#3b2716',RED='#b4372a',SEA='#cad8c6';
 var WASH=['#d9764a','#e0a63c','#7fa36b','#c96a62','#5f86a8','#a77aa0','#cf8f3f','#4f9a94'];
-var OCEANS=[[-38,28,'ATLANTIKA OKEANI'],[-140,6,'TINCH OKEANI'],[160,-28,'TINCH OKEANI'],[78,-24,'HIND OKEANI'],[20,79,'SHIMOLIY MUZ OKEANI'],[0,-62,'JANUBIY OKEAN']];
+var OCEANS=[[-38,28,'ATLANTIKA OKEANI'],[-140,6,'TINCH OKEANI'],[78,-24,'HIND OKEANI'],[20,79,'SHIMOLIY MUZ OKEANI'],[0,-62,'JANUBIY OKEAN']];
 function washOf(id){return WASH[Math.abs(hash(id))%WASH.length]}
 function rnd(seed){var s=seed;return function(){s=(s*16807)%2147483647;return s/2147483647}}
 function ease(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
@@ -607,7 +607,7 @@ function draw(now){
       items.forEach(function(it){var P=it.P;P.x+=(it.pt[0]-P.x)*.18;P.y+=(it.pt[1]-s*.95-14-P.y)*.18;});
       for(var i=0;i<items.length;i++)for(var j=i+1;j<items.length;j++){var A=items[i].P,B=items[j].P,ox=bw-Math.abs(A.x-B.x),oy=bh-Math.abs(A.y-B.y);
         if(ox>0&&oy>0){if(ox<oy*1.3){var sx=(A.x<B.x||(A.x===B.x&&i<j))?-1:1;A.x+=sx*ox/2;B.x-=sx*ox/2;}else{var sy=A.y<B.y?-1:1;A.y+=sy*oy/2;B.y-=sy*oy/2;}}}
-      items.forEach(function(it){var P=it.P,a=view.a;P.y=Math.max(a.y-20+bh/2,P.y);});
+      items.forEach(function(it){var P=it.P,a=view.a;P.y=Math.max(a.y+bh/2+2,Math.min(a.y+a.h-bh/2,P.y));P.x=Math.max(a.x+bw/2,Math.min(a.x+a.w-bw/2,P.x));});
     }
     items.forEach(function(it){var isSel=it.p.id===sel,hot=isSel||it.p.id===hoverId;
       ctx.strokeStyle='rgba(80,52,28,.7)';ctx.lineWidth=.9;ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(it.pt[0],it.pt[1]);ctx.quadraticCurveTo((it.pt[0]+it.P.x)/2+6,(it.pt[1]+it.P.y)/2,it.P.x,it.P.y+s*.6);ctx.stroke();
@@ -619,8 +619,8 @@ function draw(now){
       if(isSel)scribble(it.pt[0],it.pt[1],Math.max(14,s*.42),Math.min(1,(now-selT)/650),hash(it.p.id));
     });
   }
-  var cr=W<760?24:Math.max(34,Math.min(52,W*.035)),ar=view.a||area();
-  if(!(W<760&&sel))compass(ar.x+ar.w-cr-6,ar.y+ar.h-cr-4,cr,mouse&&compassHit&&Math.hypot(mouse.x-compassHit.x,mouse.y-compassHit.y)<compassHit.r);
+  var cr=W<760?20:Math.max(34,Math.min(52,W*.035)),ar=view.a||area();
+  if(!(W<760&&sel))compass(ar.x+ar.w-cr-6,ar.y+ar.h-cr-(W<760?14:4),cr,mouse&&compassHit&&Math.hypot(mouse.x-compassHit.x,mouse.y-compassHit.y)<compassHit.r);
   if(overlay)ctx.drawImage(overlay,0,0,W,H);
 }
 function frame(now){requestAnimationFrame(frame);if(document.hidden)return;var dt=Math.min(60,now-last)/1000;last=now;update(dt,now);draw(now);}
