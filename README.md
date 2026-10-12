@@ -1,6 +1,6 @@
 # Sayohatlar
 
-Aylanadigan 3D globus: borilgan davlat ustiga bosilsa, o‘sha yerda tushgan rasmlar ochiladi.
+Eski sayyohlar xaritasi uslubidagi tekis dunyo xaritasi: borilgan davlatlar akvarel bilan bo‘yalgan, ustiga rasmlar ilingan. Davlat yoki rasmga bosilsa, o‘sha yerda tushgan rasmlar ochiladi.
 
 ## Ishga tushirish
 
@@ -25,12 +25,12 @@ So‘ng brauzerda `http://localhost:8000` manzilini oching. GitHub Pages’da ha
 ]}
 ```
 
-`id` — davlatning uch harfli ISO kodi (`TUR`, `USA`, `GBR` ...). Ro‘yxatdagi birinchi rasm globusdagi
-belgining muqovasi bo‘ladi. `home` — parvoz yoylari boshlanadigan shahar.
+`id` — davlatning uch harfli ISO kodi (`TUR`, `USA`, `GBR` ...). Ro‘yxatdagi birinchi rasm xaritadagi
+polaroid rasm bo‘ladi. `home` — parvoz yoylari boshlanadigan shahar.
 
 ## Fayllar
 
-- `index.html` — butun sayt (globus, panel, qidiruv)
+- `index.html` — butun sayt (xarita, panel, qidiruv)
 - `trips.json` — davlatlar, yillar, izohlar va rasmlar ro‘yxati
 - `photos/` — rasmlar
 
